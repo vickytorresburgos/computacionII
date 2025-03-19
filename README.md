@@ -9,6 +9,3 @@
 - **Intereses en programación:** Desarrollo web y análisis de datos
 - **Hobbies:** cocinar y leer
 
-=======
-# computacionII
->>>>>>> 9b8bd639fa612d17ec8210709250bc8cb8817dd8
