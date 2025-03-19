@@ -1,0 +1,103 @@
+Tutorial: Trabajando con Git y GitHub
+
+1. Configuración de Git
+Para comenzar, es importante configurar tu identidad en Git para que se asocie a tus commits.
+
+Configura tu nombre:
+git config --global user.name "Tu Nombre"
+
+Configura tu correo electrónico:
+git config --global user.email "tuemail@example.com"
+
+Verifica la configuración:
+git config --list
+
+---
+
+2. Vincular tu repositorio local con GitHub
+Si ya creaste un repositorio en GitHub, ahora lo vinculas a tu repositorio local.
+
+1. Agrega el repositorio remoto (reemplaza la URL por la de tu repositorio):
+git remote add origin git@github.com:tuusuario/turepositorio.git
+
+2. Verifica que el remoto se haya agregado correctamente:
+git remote -v
+
+---
+
+3. Creación y cambio de ramas:
+
+1. Si creaste una rama master accidentalmente y deseas cambiar a main:
+
+Crea una nueva rama main desde master:
+git checkout -b main
+
+Si ya tienes la rama main, solo cambia a ella:
+git checkout main
+
+2. Fusiona la rama master en main:
+Si aún no has fusionado las ramas, realiza el merge:
+git merge master
+
+3. Elimina la rama master si ya no la necesitas:
+git branch -d master
+
+4. Elimina la rama master en el repositorio remoto (si ya no la necesitas):
+git push origin --delete master
+
+---
+
+4. Subir cambios al repositorio remoto:
+
+1. Agrega los archivos al área de preparación (staging area):
+git add .
+
+2. Realiza un commit:
+git commit -m "Primer commit"
+
+3. Sube los cambios a GitHub:
+git push origin main
+
+Si recibes un error similar a "rejected because the remote contains work that is not locally present", significa que el repositorio remoto tiene cambios que no están en tu repositorio local.
+
+---
+
+5. Resolver conflictos entre ramas (cuando git push es rechazado)
+
+Si recibes un error indicando que tu rama local está desactualizada respecto al repositorio remoto, realiza un git pull para traer los cambios remotos.
+
+1. Realiza un pull para integrar los cambios remotos:
+git pull origin main
+
+2. Resolver conflictos:  
+Si Git detecta conflictos, tendrás que resolverlos manualmente. Abre los archivos conflictivos, edítalos, luego agrégales con:
+git add .
+
+3. Finaliza el merge:
+Si hubo conflictos, haz un commit para completar la fusión:
+git commit
+
+4. Vuelve a hacer push:
+git push origin main
+
+---
+
+6. Manejo de ramas divergentes
+
+Si las ramas son completamente diferentes (por ejemplo, si no tienen un ancestro común), puedes forzar la fusión con la opción --allow-unrelated-histories.
+
+1. Haz un pull con la opción --allow-unrelated-histories:
+git pull origin main --allow-unrelated-histories
+
+2. Resolver conflictos (si es necesario) y luego agrega los cambios:
+git add .
+
+3. Finaliza el merge con un commit:
+git commit
+
+4. Sube los cambios al repositorio remoto:
+git push origin main
+
+---
+
+¡Y listo! Ahora deberías tener tu repositorio local y remoto sincronizados, con los cambios fusionados correctamente.
