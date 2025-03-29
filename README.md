@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Repositorio de Computación II #
 
 ## Información personal
