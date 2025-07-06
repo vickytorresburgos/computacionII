@@ -47,11 +47,6 @@ Promedio oxígeno: 96.78
 Integridad de la cadena: OK
 ```
 
-## Personalización
-
-- Puedes modificar los rangos de alerta en `verificador.py`.
-- Para probar alertas, fuerza valores fuera de rango en el generador.
-- Para probar errores de integridad, edita manualmente `blockchain.json`.
 
 ## Autores
 
@@ -59,6 +54,6 @@ Integridad de la cadena: OK
 - Carrera: Ingeniería en Informática
 - Materia: Computación II
 - Legajo: 62092
-- Año: 4°
+- Año: 4° 2025
 
 ---
