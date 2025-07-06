@@ -17,8 +17,8 @@ Este proyecto simula un sistema distribuido que genera, analiza y valida datos b
 
 1. **Ejecuta el sistema principal**:
    ```sh
-   git clone 
-   cd sistema_biometrico
+   git clone git@github.com:vickytorresburgos/computacionII.git
+   cd TP_1/sistema_biometrico
    python3 main.py
    ```
 
