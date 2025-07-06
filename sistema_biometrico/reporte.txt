@@ -1,0 +1,6 @@
+Bloques verificados: 60
+Alertas detectadas: 0
+Promedio frecuencia: 126.21
+Promedio presión: [144.78, 88.02]
+Promedio oxígeno: 94.93
+Integridad de la cadena: OK
