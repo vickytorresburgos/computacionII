@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
 
     # crear proceso hijo
-    p = Process(target=hijo, args=(child_conn,))
+    p = Process(target=hijo, args=(child_conn,)) # se usa una coma porque args= espera una tupla
     p.start()
 
     # padre envia datos por el pipe

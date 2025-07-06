@@ -1,6 +1,6 @@
 import os
 
-read_fd, write_fd = os.pipe()
+read_fd, write_fd = os.pipe() # crea un pipe anonimo y devuelve dos file descriptors
 
 pid = os.fork()
 

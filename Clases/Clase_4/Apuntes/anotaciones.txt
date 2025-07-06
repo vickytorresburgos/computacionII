@@ -1,0 +1,17 @@
+La función os.pipe() crea un pipe anónimo en el sistema operativo, y devuelve dos file descriptors (números enteros que representan extremos de una comunicación):
+
+read_fd: descriptor para leer del pipe.
+
+write_fd: descriptor para escribir en el pipe.
+
+En sistemas Unix, los descriptores estándar son:
+
+0: stdin (entrada estándar)
+
+1: stdout (salida estándar)
+
+2: stderr (error estándar)
+
+Los file descriptors que devuelve os.pipe() suelen ser 3 o mayor, porque los primeros están reservados para la entrada/salida estándar.
+
+Usamos Pipe(duplex=False) para que los pipes sean unidireccionales, como en los SO reales.
