@@ -47,8 +47,6 @@ def process_task_worker(url: str) -> Dict[str, Any]:
         return {"status": "error", "message": str(e)}
 
 
-# --- Implementación del Servidor (SocketServer) ---
-
 class TaskRequestHandler(socketserver.BaseRequestHandler):
     """
     Manejador para cada conexión entrante del Servidor A.
@@ -68,11 +66,8 @@ class TaskRequestHandler(socketserver.BaseRequestHandler):
             logger.info(f"[B] Recibida solicitud desde {addr}: {url}")
 
             future = pool.submit(process_task_worker, url)
-            
-            # --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-            # Cambiamos .get() por .result()
+ 
             result_msg = future.result(timeout=30) 
-            # ---------------------------------
             
             send_message(conn, result_msg)
             if result_msg["status"] == "success":
@@ -83,7 +78,6 @@ class TaskRequestHandler(socketserver.BaseRequestHandler):
         except ConnectionError as e:
             logger.warning(f"[B] Conexión perdida con {addr}: {e}")
         except TimeoutError:
-            # Esta excepción es lanzada por future.result()
             logger.error(f"[B] Timeout (30s) esperando al worker para {url}")
             send_message(conn, {"status": "error", "message": "Timeout interno del Servidor B (30s)"})
         except Exception as e:
@@ -117,8 +111,6 @@ class ProcessingServer(socketserver.ThreadingTCPServer):
             logger.critical(f"Error al vincular el servidor a {server_address}: {e}")
             sys.exit(1)
 
-
-# --- Punto de Entrada Principal ---
 
 def main():
     parser = argparse.ArgumentParser(description="Servidor de procesamiento (B)")
