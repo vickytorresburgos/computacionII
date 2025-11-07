@@ -88,21 +88,6 @@ async def request_processing_heavy(proc_addr: Tuple[str, int], url: str) -> Dict
         logger.error(f"[Task 2] Error en comunicación con Servidor B: {e}")
         return {"error": f"Error de socket: {str(e)}"}
 
-
-# class DummyCache:
-#     """Un objeto de caché 'nulo' si Redis no está disponible."""
-#     async def is_rate_limited(self, url: str, limit: int) -> bool:
-#         return False
-#     async def get_cached(self, url: str) -> None:
-#         return None
-#     async def set_cache(self, url: str, data: Dict[str, Any], ttl: int) -> None:
-#         pass
-#     async def close(self):
-#         pass
-
-
-# # --- Manejador HTTP (Cara al Cliente) ---
-
 async def handle_scrape(request: web.Request):
     """
     Manejador principal de aiohttp. Orquesta todo el proceso.
@@ -140,7 +125,6 @@ async def handle_scrape(request: web.Request):
         cached_data = await cache.get_cached(url)
         if cached_data:
             logger.info(f"Sirviendo respuesta desde caché para {url}")
-            # --- ¡FORMATO CORREGIDO PARA CACHÉ! ---
             return web.json_response({
                 "url": cached_data["url"],
                 "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -183,7 +167,6 @@ async def handle_scrape(request: web.Request):
             "processing_data": processing_data,
             "status": "success"
         }
-        # -------------------------------------
 
         return web.json_response(response_body, status=200)
 
