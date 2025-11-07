@@ -54,7 +54,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         url = sys.argv[1]
     else:
-        url = "https://virtual.um.edu.ar" 
+        url = "https://example.com" 
         print(f"No se proporcionó URL. Usando URL por defecto: {url}\n")
     
     test_url(url)
