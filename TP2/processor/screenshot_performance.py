@@ -16,17 +16,13 @@ def take_screenshot_and_performance(url: str, timeout: int = 20000) -> Dict[str,
         page = context.new_page()
         
         try:
-            # 1. Navegar. Usamos 'domcontentloaded' para la navegación inicial.
             response = page.goto(url, timeout=timeout, wait_until='domcontentloaded')
 
-            # 2. ¡LA CORRECCIÓN! Esperar explícitamente a que la página
-            #    esté 'estable' (estado 'load' y red inactiva).
-            #    Esto maneja las redirecciones.
+
             page.wait_for_load_state('load', timeout=15000)
             
             status_code = response.status if response else 0
 
-            # 3. Extraer métricas (ahora en un bloque try-except)
             performance_data = {}
             try:
                 timing = page.evaluate("() => window.performance.timing.toJSON()")
@@ -42,8 +38,6 @@ def take_screenshot_and_performance(url: str, timeout: int = 20000) -> Dict[str,
                     raise Exception("No se pudieron obtener métricas de performance")
 
             except PlaywrightError as e:
-                # Si falla (ej. la página redirigió de nuevo), al menos
-                # devolvemos datos vacíos pero no rompemos el worker.
                 print(f"[Playwright] Advertencia: no se pudieron evaluar métricas para {url}: {e}")
                 performance_data = {
                     'load_time_ms': 0,
@@ -53,13 +47,11 @@ def take_screenshot_and_performance(url: str, timeout: int = 20000) -> Dict[str,
             
             performance_data['status_code'] = status_code
 
-            # 4. Tomar el Screenshot
             buf = page.screenshot(full_page=True)
             screenshot_b64 = base64.b64encode(buf).decode('ascii')
             
             browser.close()
             
-            # 5. Devolver el diccionario consolidado
             return {
                 "screenshot": screenshot_b64,
                 "performance": performance_data
