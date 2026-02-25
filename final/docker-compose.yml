@@ -1,27 +1,67 @@
 version: '3.8'
 
 services:
-  sdas-server:
+  redis:
+    image: redis:7-alpine
+    container_name: sdas_redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  server:
     build: .
     container_name: sdas_server
     ports:
       - "8888:8888"
+    depends_on:
+      redis:
+        condition: service_healthy 
     command: python src/server.py
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
 
-  client-web:
+  celery_worker:
+    build: .
+    container_name: sdas_celery_worker
+    depends_on:
+      redis:
+        condition: service_healthy 
+      server:
+        condition: service_started
+    command: celery -A src.tasks worker --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+
+  web:
+    build: .
+    container_name: sdas_web
+    ports:
+      - "5000:5000"
+    depends_on:
+      redis:
+        condition: service_healthy 
+    command: python src/web.py
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+
+  client_web:
     build: .
     container_name: sdas_client_web
     depends_on:
-      - sdas-server
+      - server
     volumes:
       - ./logs_locales:/app/logs_locales
-    command: python src/client.py --id Web-Server-01 --host sdas-server --file logs_locales/access.log
+    command: python src/client.py --id Web-01 --host server --file logs_locales/web.log
 
-  client-db:
+  client_db:
     build: .
     container_name: sdas_client_db
     depends_on:
-      - sdas-server
+      - server
     volumes:
       - ./logs_locales:/app/logs_locales
-    command: python src/client.py --id Database-01 --host sdas-server --file logs_locales/access.log
+    command: python src/client.py --id DB-01 --host server --file logs_locales/db.log
