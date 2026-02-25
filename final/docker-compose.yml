@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  sdas-server:
+    build: .
+    container_name: sdas_server
+    ports:
+      - "8888:8888"
+    command: python src/server.py
+
+  client-web:
+    build: .
+    container_name: sdas_client_web
+    depends_on:
+      - sdas-server
+    volumes:
+      - ./logs_locales:/app/logs_locales
+    command: python src/client.py --id Web-Server-01 --host sdas-server --file logs_locales/access.log
+
+  client-db:
+    build: .
+    container_name: sdas_client_db
+    depends_on:
+      - sdas-server
+    volumes:
+      - ./logs_locales:/app/logs_locales
+    command: python src/client.py --id Database-01 --host sdas-server --file logs_locales/access.log
