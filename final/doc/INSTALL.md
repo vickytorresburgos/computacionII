@@ -1,41 +1,42 @@
 # Guía de Instalación y Despliegue (SDAS)
 
-Este documento detalla los pasos necesarios para desplegar el Sistema Distribuido de Análisis de Seguridad (SDAS) en un entorno local utilizando Docker.
+Este documento detalla los procedimientos técnicos necesarios para aprovisionar y desplegar el Sistema Distribuido de Análisis de Seguridad (SDAS) en un entorno local utilizando contenedores Docker.
 
-## Prerrequisitos
-- Sistema Operativo basado en Linux 
-- **Docker** y **Docker Compose V2** instalados.
-- Git (para clonar el repositorio).
+## Prerrequisitos del Sistema
+- Sistema Operativo basado en UNIX/Linux recomendado (ej. Ubuntu, Pop!_OS).
+- Motor de contenedores **Docker** y orquestador **Docker Compose V2**.
+- Intérprete de Python 3.10+ (únicamente para la generación de datos de prueba en el host).
 
-## Paso 1: Clonar el Repositorio
-Abre tu terminal y ejecuta:
+## Fases de Despliegue
+
+### 1. Clonación del Repositorio
+Obtenga el código fuente del sistema en su entorno local:
 ```bash
 git clone git@github.com:vickytorresburgos/computacionII.git
 cd final
 ```
 
-## Paso 2: Preparar el Entorno
+### 2. Aprovisionamiento de Datos (Mocking)
 
-El sistema requiere un archivo local para que los agentes (clientes) puedan leer los logs. Debes crearlo antes de levantar los contenedores:
+El sistema requiere archivos de logs preexistentes para que los agentes clientes comiencen la ingesta de datos. Ejecute el script generador de tráfico para aprovisionar los volúmenes locales:
 
 ```bash
-mkdir -p logs_locales
-touch logs_locales/access.log
-
+python3 generar_logs.py
 ```
 
-## Paso 3: Despliegue con Docker Compose
+*Nota: Este script generará automáticamente los archivos `logs_locales/web.log` y `logs_locales/db.log` poblados con tráfico HTTP estándar e inyecciones maliciosas simuladas.*
 
-Para construir las imágenes y levantar la arquitectura completa (1 Servidor + 2 Clientes), ejecuta en la raíz del proyecto:
+### 3. Orquestación y Levantamiento de Servicios
+
+El sistema consta de una arquitectura de microservicios. Para construir las imágenes e inicializar la topología de red virtual, ejecute:
 
 ```bash
 docker compose up --build
-
 ```
 
-*Nota: Si utilizas una versión antigua de Docker, el comando puede ser `docker-compose up --build`.*
-El sistema levantará las dependencias en orden y mostrará el Dashboard en la terminal estándar (stdout).
+El orquestador gestionará las dependencias de inicio mediante *Healthchecks*, levantando secuencialmente Redis, el Gateway TCP, los Workers de Celery, el servidor Web y, finalmente, los Agentes.
 
+### 4. Acceso a la Interfaz Gráfica
 
-
-
+Una vez que la salida estándar (stdout) indique que los servicios están en ejecución, acceda al Dashboard de monitorización a través de un navegador web en:
+`http://localhost:5000`
