@@ -1,21 +1,23 @@
-# Informe de Decisiones de Diseño y Arquitectura
+# Memoria Técnica y Decisiones de Diseño Arquitectónico
 
-Este documento justifica las decisiones técnicas tomadas para cumplir con los requerimientos de concurrencia, paralelismo y comunicación entre procesos (IPC).
+Este documento fundamenta las decisiones de ingeniería tomadas para satisfacer los requerimientos de concurrencia, paralelismo, escalabilidad y resiliencia del sistema distribuido.
 
-## 1. Asincronismo vs. Multithreading para I/O (Red)
-El Servidor Colector utiliza `asyncio` para gestionar las conexiones TCP entrantes de los clientes.
-* **Justificación:** La recepción de logs a través de Sockets es una tarea limitada por I/O (I/O Bound). Crear un hilo del sistema operativo (`threading`) por cada cliente conectado generaría un alto consumo de memoria y *context switching*. Al utilizar el Event Loop de `asyncio`, un solo hilo puede gestionar miles de conexiones concurrentes de manera eficiente, leyendo del socket únicamente cuando hay datos disponibles en el buffer.
+## 1. Patrón Productor-Consumidor y Message Brokering
+Se descartó el uso de colas en memoria (`multiprocessing.Queue`) a favor de un intermediario externo (**Redis**).
+* **Justificación:** La integración de un Message Broker permite el desacoplamiento estricto entre la capa de red y la capa de cómputo. Provee persistencia en memoria y habilita la escalabilidad horizontal; es posible añadir N contenedores de *Workers* distribuidos en diferentes nodos físicos sin alterar la lógica del servidor de ingesta.
 
-## 2. Paralelismo (Multiprocessing) para Análisis (CPU)
-Para procesar las expresiones regulares (Regex) y detectar las firmas de ataques, se utilizó el módulo `multiprocessing`.
-* **Justificación:** El análisis de cadenas complejas es una tarea intensiva de procesador (CPU Bound). En Python, el **GIL (Global Interpreter Lock)** impide que múltiples hilos ejecuten *bytecode* de Python simultáneamente en diferentes núcleos. Al utilizar procesos separados (Pool de Workers), cada proceso cuenta con su propio intérprete y espacio de memoria, logrando paralelismo real y aprovechando arquitecturas multicore.
+## 2. Gestión de Red: Concurrencia Asincrónica (I/O-Bound)
+El servidor Gateway utiliza la librería `asyncio` para la gestión de Sockets TCP.
+* **Justificación:** La recepción de datos a través de la red implica altos tiempos de espera (*latencia I/O*). El modelo tradicional de multihilos (*Thread-per-connection*) genera un consumo exhaustivo de memoria y penalizaciones por *context switching*. El Event Loop de `asyncio` permite gestionar miles de conexiones concurrentes en un único hilo lógico, maximizando el *throughput* de la aplicación.
 
-## 3. Mecanismos de Comunicación IPC
-El sistema implementa el patrón de diseño "Productor-Consumidor" mediante `multiprocessing.Queue`. Se utilizan dos colas asíncronas e independientes:
-* **`task_queue`:** Desacopla la recepción de red del procesamiento lógico. El Event Loop coloca el log crudo en esta cola en microsegundos, liberando el socket inmediatamente.
-* **`result_queue`:** Aísla el procesamiento de la visualización. Los Workers insertan las alertas procesadas aquí, y un proceso independiente (Dashboard) las consume para renderizar la pantalla sin bloquear el análisis.
-* **Justificación:** Se optó por `Queue` frente a la memoria compartida (`Value`/`Array` + `Locks`) porque las colas en Python son *process-safe* y manejan la sincronización (semáforos) internamente, mitigando el riesgo de condiciones de carrera y simplificando el diseño.
+## 3. Análisis de Firmas: Paralelismo Real (CPU-Bound)
+El motor de expresiones regulares está delegado a **Celery**, el cual utiliza un modelo de concurrencia basado en *prefork* (múltiples procesos pesados).
+* **Justificación:** El análisis léxico de cadenas masivas es una tarea intensiva computacionalmente. Debido a las limitaciones del *Global Interpreter Lock* (GIL) en CPython, la ejecución multihilo no provee paralelismo real. Celery invoca la llamada al sistema `fork()`, creando instancias independientes del intérprete de Python, lo que permite aprovechar simétricamente todos los núcleos físicos del procesador subyacente (`os.cpu_count()`).
 
-## 4. Tolerancia a Fallos en Clientes
-Los clientes incorporan un mecanismo de reintento de conexión (Retry Loop).
-* **Justificación:** En entornos distribuidos y orquestados por contenedores, es común enfrentar problemas de sincronía en el arranque (*Race Conditions*). El bucle asegura que el cliente no se caiga si el servidor tarda más tiempo en levantar, garantizando la resiliencia del sistema.
+## 4. Optimización de Ancho de Banda (Batching)
+Los agentes clientes no transmiten los logs de manera unitaria. Implementan un *buffer* en memoria que se vacía (*flush*) al alcanzar un límite de registros (`BATCH_SIZE`) o un umbral de tiempo (`TIMEOUT`).
+* **Justificación:** Disminuye drásticamente el *overhead* asociado a la pila de protocolos TCP/IP (cabeceras de red) y reduce la cantidad de *System Calls* requeridas para la transmisión, optimizando la utilización del ancho de banda y reduciendo la saturación de I/O en el servidor Gateway. 
+
+## 5. Resiliencia y Tolerancia a Fallos
+La infraestructura está orquestada considerando el determinismo de inicialización.
+* **Justificación:** En entornos orquestados, las condiciones de carrera (*Race Conditions*) durante el arranque son habituales. Se implementaron *Healthchecks* en Docker Compose para garantizar que los nodos consumidores (Celery) y productores (Server) no inicien hasta que el nodo middleware (Redis) informe disponibilidad de puertos. Adicionalmente, los agentes de telemetría incluyen un bucle de retardo (`time.sleep`) post-envío para evitar inanición de red y simular la intercalación concurrente de logs.

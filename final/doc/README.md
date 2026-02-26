@@ -1,41 +1,32 @@
 # SDAS - Sistema Distribuido de Análisis de Seguridad
 
-SDAS es un motor de detección de intrusiones ligero basado en firmas. Utiliza una arquitectura distribuida donde múltiples "Agentes" monitorean archivos de logs en tiempo real y envían la información a un "Servidor Central" para su procesamiento en paralelo.
+SDAS es un motor de detección de intrusiones basado en firmas (NIDS/HIDS híbrido) diseñado sobre una arquitectura distribuida orientada a eventos. El sistema procesa flujos continuos de logs en tiempo real para identificar patrones de ataque comunes utilizando expresiones regulares.
 
-## Uso Básico y Simulación
+## Arquitectura del Sistema
 
-Una vez que el sistema esté corriendo mediante `docker compose up`, verás el **Dashboard de Seguridad** esperando eventos.
+El proyecto implementa el patrón de diseño Productor-Consumidor apoyado en las siguientes tecnologías:
+1.  **Agentes (Clientes TCP):** Procesos ligeros que ingieren archivos de logs locales, implementando técnicas de *Batching* para agrupar registros y transmitirlos al servidor central, mitigando el *overhead* de red.
+2.  **Gateway Asincrónico (Servidor TCP):** Implementado con `asyncio`, actúa como un nodo receptor altamente concurrente. Su única responsabilidad es encolar los lotes de datos en el Message Broker.
+3.  **Message Broker (Redis):** Actúa como middleware de mensajería para persistir las tareas encoladas y almacenar temporalmente los resultados de las alertas.
+4.  **Procesamiento Distribuido (Celery):** Un *pool* de *workers* extrae los lotes de Redis y ejecuta el análisis de firmas (CPU-bound) en paralelo, evadiendo el GIL de Python mediante el modelo *prefork*.
+5.  **Dashboard de Monitoreo (Flask):** Interfaz web reactiva que consume la API de resultados en Redis mediante técnicas de *HTTP Polling*.
 
-### ¿Cómo simular tráfico y ataques?
-Abre una segunda terminal en la raíz del proyecto y utiliza el comando `echo` para inyectar líneas de log en el archivo que los clientes están monitoreando (`logs_locales/access.log`).
+## Firmas de Detección Soportadas
+El motor actualmente clasifica y prioriza las siguientes amenazas:
+* **SQL Injection (SQLi):** Severidad CRÍTICA. Búsqueda de manipulación de consultas (ej. `UNION SELECT`, `' OR 1=1`).
+* **Path Traversal:** Severidad ALTA. Búsqueda de escalamiento de directorios (`../../`) y acceso a archivos sensibles del SO.
+* **Cross-Site Scripting (XSS):** Severidad MEDIA. Inyección de etiquetas `<script>` o pseudoprotocolos de ejecución.
 
-**1. Simular tráfico normal (No genera alertas):**
+## Inyección Manual de Tráfico
+Para evaluar la latencia del sistema en tiempo real, se pueden inyectar líneas de log directamente en los archivos montados en los volúmenes, abriendo una terminal paralela en el host:
+
+**Inyección SQL en Base de Datos:**
 ```bash
-echo "192.168.1.10 - "GET /index.html HTTP/1.1\"" >> logs_locales/access.log
+echo "10.0.0.5 - - [25/Feb/2026] \"GET /login?user=' OR 1=1 --\" 403" >> logs_locales/db.log
 ```
 
-**2. Simular un ataque de SQL Injection (Alerta Crítica - Rojo):**
+**Inyección XSS en Frontend:**
 
 ```bash
-echo "10.0.0.5 - \"GET /login?user=' OR 1=1 --\"" >> logs_locales/access.log
+echo "192.168.1.1 - - [25/Feb/2026] \"GET /?search=<script>alert('XSS')</script>\" 200" >> logs_locales/web.log
 ```
-
-```bash
-echo "192.168.0.1 - \"GET /?id=1 UNION SELECT password FROM users\"" >> logs_locales/access.log
-```
-**3. Simular un ataque Path Traversal (Alerta Alta - Amarillo):**
-
-```bash
-echo "172.16.0.2 - \"GET /../../etc/passwd\"" >> logs_locales/access.log
-```
-
-**4. Simular un ataque Cross-Site Scripting XSS (Alerta Media - Cian):**
-
-```bash
-echo "192.168.0.9 - \"GET /?search=<script>alert('XSS')</script>\"" >> logs_locales/access.log
-```
-
-### Detener la aplicación
-
-Para apagar el servidor y los clientes de manera segura, presiona `Ctrl + C` en la terminal donde está corriendo Docker.
-
