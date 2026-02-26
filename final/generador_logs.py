@@ -42,7 +42,7 @@ def generar_linea(rutas, ataques):
     return f"{ip} - - {str_tiempo} \"{peticion}\" {estado}\n"
 
 
-with open(ARCHIVO_WEB, "w") as f_web, open(ARCHIVO_DB, "w") as f_db:
+with open(ARCHIVO_WEB, "a") as f_web, open(ARCHIVO_DB, "a") as f_db:
     for _ in range(NUM_LOGS_PER_FILE):
         f_web.write(generar_linea(rutas_web, ataques_web))
         f_db.write(generar_linea(rutas_db, ataques_db))
