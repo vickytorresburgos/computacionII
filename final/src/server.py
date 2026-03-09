@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import json
+import argparse
 from tasks import process_log_batch 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -22,7 +23,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                     logs = log_data.get("logs", []) 
                     
                     if logs:
-                        process_log_batch.delay(cliente_id, logs)
+                        process_log_batch.delay(cliente_id, logs) # funcion asincronica de celery
                         logging.info(f"[{cliente_id}] Lote de {len(logs)} logs encolado en Celery.")
                         
                 except json.JSONDecodeError:
@@ -42,8 +43,12 @@ async def main_server(host: str, port: int):
         await server.serve_forever()
 
 if __name__ == '__main__':
-    HOST, PORT = '0.0.0.0', 8888
+    parser = argparse.ArgumentParser(description="SDAS Gateway TCP Server")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host para escuchar")
+    parser.add_argument("--port", type=int, default=8888, help="Puerto para escuchar")
+    args = parser.parse_args()
+
     try:
-        asyncio.run(main_server(HOST, PORT))
+        asyncio.run(main_server(args.host, args.port))
     except KeyboardInterrupt:
         logging.info("Deteniendo servidor TCP...")

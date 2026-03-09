@@ -26,7 +26,7 @@ python3 generar_logs.py
 
 *Nota: Este script generará automáticamente los archivos `logs_locales/web.log` y `logs_locales/db.log` poblados con tráfico HTTP estándar e inyecciones maliciosas simuladas.*
 
-### 3. Orquestación y Levantamiento de Servicios
+### 3. Orquestación de Servicios
 
 El sistema consta de una arquitectura de microservicios. Para construir las imágenes e inicializar la topología de red virtual, ejecute:
 

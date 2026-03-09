@@ -38,41 +38,54 @@
         </div>
     </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.js"></script>
+    
     <script>
-        async function fetchAlerts() {
+        const tbody = document.getElementById('alerts-table-body');
+
+        function crearFilaHTML(alerta) {
+            const row = document.createElement('tr');
+            let textColor = alerta.severidad === 'CRÍTICA' ? 'text-white' : 'text-dark';
+            
+            row.innerHTML = `
+                <td class="align-middle fw-bold">${alerta.cliente_id}</td>
+                <td class="align-middle">${alerta.categoria}</td>
+                <td class="align-middle"><span class="badge ${textColor}" style="background-color: ${alerta.color};">${alerta.severidad}</span></td>
+                <td class="align-middle log-text">${alerta.log_detectado}</td>
+            `;
+            return row;
+        }
+
+        async function loadInitialAlerts() {
             try {
                 const response = await fetch('/api/alerts');
                 const alerts = await response.json();
                 
-                const tbody = document.getElementById('alerts-table-body');
                 tbody.innerHTML = ''; 
                 if (alerts.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Sistema seguro. No se detectaron intrusiones recientes.</td></tr>';
+                    tbody.innerHTML = '<tr id="no-alerts"><td colspan="4" class="text-center text-muted py-4">Sistema seguro. No se detectaron intrusiones recientes.</td></tr>';
                     return;
                 }
-
-                alerts.forEach(alerta => {
-                                    const row = document.createElement('tr');
-                                    
-                                    let textColor = alerta.severidad === 'CRÍTICA' ? 'text-white' : 'text-dark';
-
-                                    row.innerHTML = `
-                                        <td class="align-middle fw-bold">${alerta.cliente_id}</td>
-                                        <td class="align-middle">${alerta.categoria}</td>
-                                        <td class="align-middle">
-                                            <span class="badge ${textColor}" style="background-color: ${alerta.color};">${alerta.severidad}</span>
-                                        </td>
-                                        <td class="align-middle log-text">${alerta.log_detectado}</td>
-                                    `;
-                                    tbody.appendChild(row);
-                                });
+                alerts.forEach(alerta => tbody.appendChild(crearFilaHTML(alerta)));
             } catch (error) {
                 console.error("Error al obtener alertas:", error);
             }
         }
 
-        setInterval(fetchAlerts, 2000);
-        fetchAlerts();
+        loadInitialAlerts();
+
+        const socket = io();
+        
+        socket.on('nueva_alerta', function(alerta) {
+            const noAlertsMsg = document.getElementById('no-alerts');
+            if (noAlertsMsg) noAlertsMsg.remove();
+
+            tbody.insertBefore(crearFilaHTML(alerta), tbody.firstChild);
+
+            if (tbody.children.length > 100) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        });
     </script>
 </body>
 </html>

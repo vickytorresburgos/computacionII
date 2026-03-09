@@ -36,6 +36,9 @@ def process_log_batch(cliente_id, batch):
                 # Guarda la alerta en Redis
                 redis_client.lpush('sdas_alerts', json.dumps(alerta))
                 redis_client.ltrim('sdas_alerts', 0, 99)
+
+                # Publica la alerta en el canal de Redis
+                redis_client.publish('sdas_alerts_channel', json.dumps(alerta))
                 
                 alertas_detectadas += 1
                 break # Si ya detectó un ataque en esta línea, deja de evaluar otras firmas
