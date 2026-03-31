@@ -11,6 +11,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - sdas_net
 
   server:
     build: .
@@ -20,13 +22,16 @@ services:
     depends_on:
       redis:
         condition: service_healthy 
-    command: python src/server.py --host 0.0.0.0 --port 8888
+    command: "python src/server.py --host :: --port 8888"
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
+    networks:
+      - sdas_net
 
   celery_worker:
     build: .
-    container_name: sdas_celery_worker
+    deploy:
+      replicas: 3
     depends_on:
       redis:
         condition: service_healthy 
@@ -35,6 +40,8 @@ services:
     command: celery -A src.tasks worker --loglevel=info
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
+    networks:
+      - sdas_net
 
   web:
     build: .
@@ -44,9 +51,11 @@ services:
     depends_on:
       redis:
         condition: service_healthy 
-    command: python src/web.py --host 0.0.0.0 --port 5000
+    command: "python src/web.py --host :: --port 5000"
     environment:
       - REDIS_URL=redis://redis:6379/0
+    networks:
+      - sdas_net
 
   client_web:
     build: .
@@ -56,6 +65,8 @@ services:
     volumes:
       - ./logs_locales:/app/logs_locales
     command: python src/client.py --id Web-01 --host server --file logs_locales/web.log
+    networks:
+      - sdas_net
 
   client_db:
     build: .
@@ -65,3 +76,13 @@ services:
     volumes:
       - ./logs_locales:/app/logs_locales
     command: python src/client.py --id DB-01 --host server --file logs_locales/db.log
+    networks:
+      - sdas_net
+
+networks:
+  sdas_net:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: '10.50.0.0/16'
+        - subnet: 'fd00:1::/80'

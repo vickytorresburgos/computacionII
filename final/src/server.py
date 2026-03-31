@@ -2,11 +2,11 @@ import asyncio
 import logging
 import json
 import argparse
-from tasks import process_log_batch 
+from tasks import process_log_batch # type: ignore
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
-async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     addr = writer.get_extra_info('peername')
     logging.info(f"Conexión TCP aceptada de {addr}")
     try:
@@ -44,7 +44,7 @@ async def main_server(host: str, port: int):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="SDAS Gateway TCP Server")
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host para escuchar")
+    parser.add_argument("--host", type=str, default="::", help="Host para escuchar")
     parser.add_argument("--port", type=int, default=8888, help="Puerto para escuchar")
     args = parser.parse_args()
 
