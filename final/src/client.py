@@ -8,19 +8,23 @@ BATCH_SIZE = 50        # Cantidad de logs por bloque
 BATCH_TIMEOUT = 1.0    # Tiempo máximo de espera en segundos antes de enviar (Flush)
 
 def stream_logs(file_path, host, port, client_id):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s = None
     conectado = False
     
     while not conectado:
         try:
-            s.connect((host, port))
+            s = socket.create_connection((host, port))
             conectado = True
-        except ConnectionRefusedError:
+        except (ConnectionRefusedError, socket.gaierror):
             print(f"[{client_id}] Esperando al servidor en {host}:{port}... (Reintentando en 2s)")
             time.sleep(2)
             
     print(f"[{client_id}] Conectado monitoreando '{file_path}' en bloques...")
     
+    if s is None:
+        return
+    assert isinstance(s, socket.socket)
+        
     try:
         with s, open(file_path, 'r') as f:            
             batch = []
