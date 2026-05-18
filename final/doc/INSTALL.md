@@ -1,42 +1,63 @@
-# Guía de Instalación y Despliegue (SDAS)
+# Guía de Instalación y Ejecución
 
-Este documento detalla los procedimientos técnicos necesarios para aprovisionar y desplegar el Sistema Distribuido de Análisis de Seguridad (SDAS) en un entorno local utilizando contenedores Docker.
+Sigue estos pasos para desplegar el **Sistema Distribuido de Análisis de Seguridad (SDAS)** utilizando Docker.
 
-## Prerrequisitos del Sistema
-- Sistema Operativo basado en UNIX/Linux recomendado (ej. Ubuntu, Pop!_OS).
-- Motor de contenedores **Docker** y orquestador **Docker Compose V2**.
-- Intérprete de Python 3.10+ (únicamente para la generación de datos de prueba en el host).
+## Prerrequisitos
 
-## Fases de Despliegue
+*   **Docker** (versión 20.10+)
+*   **Docker Compose** (versión 3.8+)
+*   Conectividad a Internet para la descarga de imágenes base.
 
-### 1. Clonación del Repositorio
-Obtenga el código fuente del sistema en su entorno local:
+## Despliegue Rápido
+
+1.  Clone este repositorio o asegúrate de estar en el directorio raíz del proyecto.
+2.  Inicie la infraestructura completa en segundo plano:
+
+    ```bash
+    docker compose up --build -d
+    ```
+
+    *Este comando construirá las imágenes personalizadas para el servidor, los workers, el dashboard y los clientes.*
+
+3.  Verifica que todos los servicios estén en ejecución:
+
+    ```bash
+    docker compose ps
+    ```
+
+    Deberías ver:
+    *   `sdas_redis`: Activo (Healhy).
+    *   `sdas_server`: Activo.
+    *   `sdas_web`: Activo.
+    *   `celery_worker`: 3 instancias activas.
+    *   `sdas_client_web` / `sdas_client_db`: Activos enviando logs.
+
+## Acceso al Dashboard
+
+Una vez desplegado, el dashboard web estará disponible en:
+
+**URL:** [http://localhost:5000](http://localhost:5000)
+
+Desde aquí podrás ver las alertas de seguridad (SQL Injection, XSS, Path Traversal) en tiempo real a medida que los agentes procesan los logs.
+
+## Monitoreo de Logs
+
+Si deseas ver el procesamiento interno del sistema, puedes seguir los logs de los workers de Celery:
+
 ```bash
-git clone git@github.com:vickytorresburgos/computacionII.git
-cd final
+docker compose logs -f celery_worker
 ```
 
-### 2. Aprovisionamiento de Datos (Mocking)
-
-El sistema requiere archivos de logs preexistentes para que los agentes clientes comiencen la ingesta de datos. Ejecute el script generador de tráfico para aprovisionar los volúmenes locales:
+O los logs del servidor de ingesta TCP:
 
 ```bash
-python3 generar_logs.py
+docker compose logs -f server
 ```
 
-*Nota: Este script generará automáticamente los archivos `logs_locales/web.log` y `logs_locales/db.log` poblados con tráfico HTTP estándar e inyecciones maliciosas simuladas.*
+## Detención del Sistema
 
-### 3. Orquestación de Servicios
-
-El sistema consta de una arquitectura de microservicios. Para construir las imágenes e inicializar la topología de red virtual, ejecute:
+Para detener y eliminar todos los contenedores y redes creadas:
 
 ```bash
-docker compose up --build
+docker compose down
 ```
-
-El orquestador gestionará las dependencias de inicio mediante *Healthchecks*, levantando secuencialmente Redis, el Gateway TCP, los Workers de Celery, el servidor Web y, finalmente, los Agentes.
-
-### 4. Acceso a la Interfaz Gráfica
-
-Una vez que la salida estándar (stdout) indique que los servicios están en ejecución, acceda al Dashboard de monitorización a través de un navegador web en:
-`http://localhost:5000`

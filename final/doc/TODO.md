@@ -1,16 +1,22 @@
 # Roadmap y Trabajo Futuro (TODO)
 
-Lista estructurada de mejoras arquitectónicas y funcionales propuestas para iteraciones futuras del sistema:
+Lista de mejoras propuestas para la evolución del **Sistema Distribuido de Análisis de Seguridad (SDAS)**:
 
-## 1. Seguridad y Autenticación
-- **Múltiplex TLS/SSL:** Implementar cifrado de transporte en los Sockets TCP entre los Agentes y el Gateway, y configurar WSS (WebSocket Secure) para la interfaz web.
-- **Autenticación Mutua (mTLS):** Integrar un sistema de autenticación basada en certificados para asegurar que el Gateway rechace *payloads* provenientes de agentes no autorizados.
+## 1. Seguridad de la Infraestructura
+- **Encriptación de Transporte (TLS/SSL)**: Implementar certificados para asegurar las comunicaciones vía Sockets TCP y HTTPS para el Dashboard.
+- **Autenticación de Agentes**: Requerir un Token o API Key en `client.py` para validar que los logs provengan de fuentes autorizadas.
+- **Control de Acceso (RBAC)**: Añadir una capa de login al dashboard para restringir la visualización de alertas a personal de seguridad.
 
-## 2. Persistencia y Retención de Datos
-- **Almacenamiento a Largo Plazo:** Migrar el registro final de alertas desde la estructura volátil de listas de Redis hacia una base de datos documental indexada (ej. Elasticsearch) para permitir auditorías históricas complejas y consultas por rangos temporales.
+## 2. Almacenamiento y Análisis Histórico
+- **Persistencia en Base de Datos**: Migrar el historial de alertas desde Redis (volátil) hacia una base de datos documental (MongoDB o Elasticsearch) para análisis forense a largo plazo.
+- **Búsqueda Avanzada**: Implementar filtros por fecha, severidad y tipo de ataque en la interfaz web.
+- **Reportes Automáticos**: Generar resúmenes en PDF con estadísticas de ataques detectados por día/semana.
 
-## 3. Escalabilidad del Frontend
-- **Desacoplamiento del Event Loop de WebSockets:** Actualizar la arquitectura de `Flask-SocketIO` para utilizar un *Message Queue* nativo (como RabbitMQ o la integración directa de Redis con SocketIO) en lugar del hilo en segundo plano actual (`threading.Thread`). Esto permitirá escalar horizontalmente el servidor Flask detrás de un balanceador de carga (Load Balancer) sin perder el enrutamiento de los WebSockets.
+## 3. Optimización del Motor de Detección
+- **Compilación de Regex**: Utilizar librerías de alto rendimiento como `re2` o `hyperscan` para soportar miles de firmas sin degradar el rendimiento.
+- **Firmas Dinámicas**: Permitir la actualización de patrones de ataque sin necesidad de reiniciar los workers de Celery (vía Redis o Base de Datos).
+- **Detección Basada en ML**: Integrar modelos de Machine Learning para detectar anomalías de comportamiento que no se ajusten a firmas estáticas.
 
-## 4. Optimización del Motor de Reglas
-- **Compilación de Reglas AOT:** Reemplazar el motor `re` nativo de Python por librerías especializadas en coincidencia de patrones de alto rendimiento (ej. Hyperscan o motor RE2) para soportar miles de reglas de firmas sin degradación lineal del rendimiento.
+## 4. Escalabilidad y Red
+- **Balanceo de Carga**: Implementar un Load Balancer (Nginx/HAProxy) frente al servidor Gateway para distribuir el tráfico entre múltiples instancias asincrónicas.
+- **Dashboard Distribuido**: Adaptar el sistema SSE para funcionar correctamente en clústeres de servidores web utilizando el adaptador de Redis para Pub/Sub coordinado.
